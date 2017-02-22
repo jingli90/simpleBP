@@ -2,7 +2,6 @@
 using namespace std;
 #include <string>
 #include <sstream>
-//#include <stringstream.h>
 
 #include <TH1.h>
 #include <TGraph.h>
