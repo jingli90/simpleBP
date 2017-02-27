@@ -112,6 +112,7 @@ class simpleBP{
 		virtual void Shuffle(Int_t* index, Int_t n); // from TMVA package
 		void DecayLearningRate(Double_t rate){ eta *= (1-rate); } // from TMVA package
 		virtual double CalculateEstimator(TString treeType, Int_t iEpoch);
+		virtual void plotWeights();
 };
 
 #endif
@@ -264,22 +265,24 @@ void simpleBP::InitTrees(){
 		cout<<"total: "<<nentries<<endl;
 	}
 	else{
-		cout<<"Error! sig & bkg have different entries!"<<endl;
+		cout<<"Attention! sig & bkg have different entries!"<<endl;
 		nentries=TMath::Min(nentries_s,nentries_b);
 		cout<<"signal: "<<nentries_s<<" background: "<<nentries_b;
-		cout<<"total: "<<nentries<<endl;
+		//cout<<"total: "<<nentries<<endl;
 	}
 
 	train_s = new TTree();
 	train_s = c_s->CloneTree(0);
+	for (Long64_t jentry=0; jentry<nentries_s;jentry=jentry+2.){
+		c_s->GetEntry(jentry);
+		train_s->Fill();
+		nentries_s_train++;
+	}
 	train_b = new TTree();	
 	train_b = c_b->CloneTree(0);
-	for (Long64_t jentry=0; jentry<nentries;jentry=jentry+2.){
-		c_s->GetEntry(jentry);
+	for (Long64_t jentry=0; jentry<nentries_b;jentry=jentry+2.){
 		c_b->GetEntry(jentry);
-		train_s->Fill();
 		train_b->Fill();
-		nentries_s_train++;
 		nentries_b_train++;
 	}
 
@@ -786,19 +789,19 @@ void simpleBP::plotHist(){
 
 	double x_ltx=0.25, y_ltx=0.7;
 
-	for(int i=1;i<=nLayer+1;i++){
-		y_ltx=0.7;
-		ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
-		y_ltx=y_ltx-0.04;
-		for(int j=1;j<=nNodes[i];j++){
-			for(int k=0;k<=nNodes[i-1];k++){
-				ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
-				y_ltx=y_ltx-0.04;
-			}
-			cout<<endl;
-		}
-		x_ltx=x_ltx+0.2;
-	}
+	//for(int i=1;i<=nLayer+1;i++){
+	//	y_ltx=0.7;
+	//	ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
+	//	y_ltx=y_ltx-0.04;
+	//	for(int j=1;j<=nNodes[i];j++){
+	//		for(int k=0;k<=nNodes[i-1];k++){
+	//			ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
+	//			y_ltx=y_ltx-0.04;
+	//		}
+	//		cout<<endl;
+	//	}
+	//	x_ltx=x_ltx+0.2;
+	//}
 
 	c->Print("discriminant.png");
 
@@ -873,19 +876,19 @@ void simpleBP::plotROC(){
 	ltx->SetTextFont(22);
 	ltx->SetTextSize(0.03);
 	double x_ltx=0.5, y_ltx=0.5;
-	for(int i=1;i<=nLayer+1;i++){
-		y_ltx=0.5;
-		ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
-		y_ltx=y_ltx-0.04;
-		for(int j=1;j<=nNodes[i];j++){
-			for(int k=0;k<=nNodes[i-1];k++){
-				ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
-				y_ltx=y_ltx-0.04;
-			}
-			cout<<endl;
-		}
-		x_ltx=x_ltx+0.2;
-	}
+	//for(int i=1;i<=nLayer+1;i++){
+	//	y_ltx=0.5;
+	//	ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
+	//	y_ltx=y_ltx-0.04;
+	//	for(int j=1;j<=nNodes[i];j++){
+	//		for(int k=0;k<=nNodes[i-1];k++){
+	//			ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
+	//			y_ltx=y_ltx-0.04;
+	//		}
+	//		cout<<endl;
+	//	}
+	//	x_ltx=x_ltx+0.2;
+	//}
 	c->SaveAs("ROC_train.png");
 
 	c->Clear();
@@ -901,20 +904,56 @@ void simpleBP::plotROC(){
 	hGrid->Draw();
 	g_ROC_test->Draw("*same");
 	x_ltx=0.5, y_ltx=0.5;
+	//for(int i=1;i<=nLayer+1;i++){
+	//	y_ltx=0.5;
+	//	ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
+	//	y_ltx=y_ltx-0.04;
+	//	for(int j=1;j<=nNodes[i];j++){
+	//		for(int k=0;k<=nNodes[i-1];k++){
+	//			ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
+	//			y_ltx=y_ltx-0.04;
+	//		}
+	//		cout<<endl;
+	//	}
+	//	x_ltx=x_ltx+0.2;
+	//}
+	c->SaveAs("ROC_test.png");
+}
+
+void simpleBP::plotWeights(){
+
+	c->cd();
+	c->Clear();
+
+	double x_ltx=0.1, y_ltx=0.9;
+	double dx=0.2;
+	double dy=0.04;
+
+	TLatex * ltx = new TLatex();
+	ltx->SetNDC(kTRUE);
+	ltx->SetTextFont(22);
+	ltx->SetTextSize(0.03);
+
 	for(int i=1;i<=nLayer+1;i++){
-		y_ltx=0.5;
 		ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
-		y_ltx=y_ltx-0.04;
+		y_ltx=y_ltx-dy;
 		for(int j=1;j<=nNodes[i];j++){
 			for(int k=0;k<=nNodes[i-1];k++){
 				ltx->DrawLatex(x_ltx,y_ltx,Form("w_{%d%d}=%f", j, k, weight[i]->at(j)->at(k)));
-				y_ltx=y_ltx-0.04;
+				y_ltx=y_ltx-dy;
 			}
-			cout<<endl;
+			if(j!=nNodes[i] && (j%4)!=0){
+				x_ltx=x_ltx+dx;
+				y_ltx=y_ltx+dy*(nNodes[i-1]+1);
+			}
+			else{
+				x_ltx=0.1;
+				y_ltx=y_ltx-dy;
+			}
 		}
-		x_ltx=x_ltx+0.2;
 	}
-	c->SaveAs("ROC_test.png");
+
+	c->SaveAs("myWeights.png");
 }
 
 void simpleBP::Shuffle(Int_t* index, Int_t n){
