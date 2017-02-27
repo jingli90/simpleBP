@@ -36,7 +36,8 @@ class simpleBP{
 		TChain * c_b;
 		base * b_s;
 		base * b_b;
-		base * b;
+		base * b_s_test;
+		base * b_b_test;
 		TTree * train_s;
 		TTree * train_b;
 		TTree * test_s;
@@ -66,6 +67,7 @@ class simpleBP{
 		double decay_rate;
 		double threshold;
 		double minDev;
+		int TestRate;
 		vector<double>* var;
 		vector<double>* net[20];
 		vector<double>* o[20];
@@ -84,6 +86,8 @@ class simpleBP{
 		TCanvas * c;
 		TGraph * g_difference;
 		TGraph * g_variance;
+		TH1D * g_variance_HistTrain;
+		TH1D * g_variance_HistTest;
 		vector<vector<TGraph*>*>* g_weight[20];
 
 		simpleBP(TString SignalFile, TString BackgroundFile, TString treename, TString outfilename);
@@ -94,6 +98,7 @@ class simpleBP{
 		virtual void SetEta(double Eta);
 		void SetDecayRate(double rate){decay_rate=rate;}
 		void SetNEpochs(int N){nEpochs=N;}
+		void SetTestRate(int N){TestRate=N;}
 		virtual void SetThreshold(double Th);
 		virtual void SetMinDeviate(double Dev);
 		virtual void InitParameters();
@@ -106,6 +111,7 @@ class simpleBP{
 		virtual void plotROC();
 		virtual void Shuffle(Int_t* index, Int_t n); // from TMVA package
 		void DecayLearningRate(Double_t rate){ eta *= (1-rate); } // from TMVA package
+		virtual double CalculateEstimator(TString treeType, Int_t iEpoch);
 };
 
 #endif
@@ -124,8 +130,10 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	c_b = new TChain(treeName.Data(),"c_b");
 	c_s->Add(sFilename.Data());
 	c_b->Add(bFilename.Data());
-	b_s = new base(c_s);
-	b_b = new base(c_b);
+	b_s = new base();
+	b_b = new base();
+	b_s_test = new base();
+	b_b_test = new base();
 
 	TFile * fout = new TFile(outFilename.Data(),"RECREATE");
 
@@ -152,6 +160,12 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	g_variance = new TGraph();
 
 	c=new TCanvas("c","c",10,10,700,700);
+
+	eta=0.02; 
+	decay_rate=0.01;
+	threshold=0.;
+	minDev=0.1;
+	TestRate=10;
 }
 
 void simpleBP::SetNLayer(int nlayer){
@@ -285,6 +299,11 @@ void simpleBP::InitTrees(){
 		nentries_b_test++;
 	}
 
+	b_s->Init(train_s);
+	b_b->Init(train_b);
+	b_s_test->Init(test_s);
+	b_b_test->Init(test_b);
+
 	cout<<"signal training: "<<nentries_s_train<<" background training: "<<nentries_b_train<<endl;
 	cout<<"signal test: "<<nentries_s_test<<" background test: "<<nentries_b_test<<endl;
 
@@ -294,8 +313,19 @@ void simpleBP::doTraining(){
 	cout<<endl;
 	cout<<"start training ..."<<endl;
 
-	b_s->Init(train_s);
-	b_b->Init(train_b);
+	//b_s->Init(train_s);
+	//b_b->Init(train_b);
+	//b_s_test->Init(test_s);
+	//b_b_test->Init(test_b);
+
+	//g_variance_HistTrain = new TH1D( "estimatorHistTrain", "training estimator", nEpochs, 0., nEpochs );
+	//g_variance_HistTest = new TH1D( "estimatorHistTest", "test estimator", nEpochs, 0., nEpochs );
+	Int_t nbinTest = Int_t(nEpochs/TestRate);
+	g_variance_HistTrain = new TH1D( "estimatorHistTrain", "training estimator", nbinTest, Int_t(TestRate/2), nbinTest*TestRate+Int_t(TestRate/2));
+	g_variance_HistTest = new TH1D( "estimatorHistTest", "test estimator", nbinTest, Int_t(TestRate/2), nbinTest*TestRate+Int_t(TestRate/2) );
+	// estimators
+	Double_t trainE = -1;
+	Double_t testE  = -1;
 
 	bool isStop=true;
 	int N_loop=0;
@@ -326,7 +356,7 @@ void simpleBP::doTraining(){
 		Shuffle(index, nEvents);
 
 		for(Long64_t jentry=0; jentry<nEvents;jentry++)
-		//for(Long64_t jentry=0; jentry<10;jentry++)
+			//for(Long64_t jentry=0; jentry<10;jentry++)
 		{
 			//if(jentry%1000==0)cout<<"entry: "<<jentry<<endl;
 			//cout<<"entry: "<<jentry<<endl;
@@ -349,6 +379,7 @@ void simpleBP::doTraining(){
 			//cout<<"discriminant="<<discriminant<<endl;
 
 			difference=(discriminant-isSig)*(discriminant-isSig)/2.;
+			//difference=(discriminant-isSig)*(discriminant-isSig); // test for TMVA
 			difference=difference*evt_weight;
 			//if(difference>2)cout<<"jentry_tmp="<<jentry_tmp<<" discriminant="<<discriminant<<" isSig="<<isSig<<endl;
 			//cout<<"difference="<<difference<<endl;
@@ -373,6 +404,12 @@ void simpleBP::doTraining(){
 		variance=variance/sum_weight;
 		//cout<<"variance="<<variance<<endl;
 		g_variance->SetPoint(N_loop-1, N_loop, variance);
+		if(N_loop%TestRate==0){
+			trainE = CalculateEstimator( "Training", N_loop );
+			testE  = CalculateEstimator( "Testing",  N_loop );
+			g_variance_HistTrain->Fill( N_loop, trainE );
+			g_variance_HistTest->Fill( N_loop, testE );
+		}
 		isStop=false;
 		bool isStop1=TMath::Abs((variance-variance_old)/variance_old)<0.001;
 		bool isStop2=TMath::Abs((difference_largest-difference_largest_old)/difference_largest_old)<0.001;
@@ -451,6 +488,28 @@ void simpleBP::doTraining(){
 	g_variance->Draw("AP*");
 	ltx->DrawLatex(0.15,0.85,Form("nEntries=%d, nLoop=%d", nentries_s_train+nentries_b_train, N_loop));
 	c->SaveAs("variance.png");
+
+	c->Clear();
+	p2=new TPad("p2","p2", 0.00,0.00,1.00,0.97);
+	p2->SetFillColor(0);
+	p2->Draw();
+	p2->SetLeftMargin(0.14);
+	p2->SetTicks(1,1);
+	p2->cd();
+	gStyle->SetOptStat(0);
+	g_variance_HistTrain->SetTitle("MLP Convergence Test; Epochs; Estimator");
+	g_variance_HistTrain->SetMaximum((1.2*TMath::Max(g_variance_HistTrain->GetMaximum(), g_variance_HistTest->GetMaximum())));
+	g_variance_HistTrain->GetYaxis()->SetTitleOffset(2);
+	g_variance_HistTrain->SetLineColor(1);
+	g_variance_HistTest->SetLineColor(2);
+	g_variance_HistTrain->Draw();
+	g_variance_HistTest->Draw("Same");
+	TLegend* legend = new TLegend(0.7,0.75,0.9,0.9,"");
+	legend->SetFillColor(kWhite);
+	legend->AddEntry("estimatorHistTrain", "Training Sample", "l");
+	legend->AddEntry("estimatorHistTest", "Test Sample", "l");
+	legend->Draw();
+	c->SaveAs("annconvergencetest.png");
 }
 
 void simpleBP::calculate(base * b){
@@ -550,9 +609,71 @@ void simpleBP::back_propogation(int isSig){
 	}
 }
 
+Double_t simpleBP::CalculateEstimator( TString treeType, Int_t iEpoch ){
+	// calculate the estimator that training is attempting to minimize
+
+	double estimator = 0.;
+
+	// sanity check
+	if (treeType!="Training" && treeType!="Testing") {
+		cout<<"<CalculateEstimator> fatal error: wrong tree type: "<<treeType << endl;
+	}
+	base * b_s_tmp;
+	base * b_b_tmp;
+	Int_t nEvents;
+	Int_t nentries_s_tmp, nentries_b_tmp;
+	if(treeType=="Training"){
+		b_s_tmp=b_s;
+		b_b_tmp=b_b;
+		nentries_s_tmp=nentries_s_train;
+		nentries_b_tmp=nentries_b_train;
+		nEvents=nentries_s_train+nentries_b_train;
+	}
+	if(treeType=="Testing"){
+		b_s_tmp=b_s_test;
+		b_b_tmp=b_b_test;
+		nentries_s_tmp=nentries_s_test;
+		nentries_b_tmp=nentries_b_test;
+		nEvents=nentries_s_test+nentries_b_test;
+	}
+
+	double difference_tmp;
+	double sum_weight_tmp = 0.;
+	double evt_weight_tmp;
+	int isSig;
+
+	for(Long64_t jentry=0; jentry<nEvents;jentry++){
+		if(jentry<nentries_s_tmp){
+			isSig=1;
+			b_s_tmp->GetEntry(jentry);
+			calculate(b_s_tmp);
+			evt_weight_tmp=b_s_tmp->weight;
+		}
+		else{
+			//isSig=-1;
+			isSig=0; // test for TMVA
+			b_b_tmp->GetEntry(jentry-nentries_s_tmp);
+			calculate(b_b_tmp);
+			evt_weight_tmp=b_b_tmp->weight;
+		}
+		sum_weight_tmp=sum_weight_tmp+evt_weight_tmp;
+		//difference_tmp=(discriminant-isSig)*(discriminant-isSig)/2.;
+		difference_tmp=(discriminant-isSig)*(discriminant-isSig); // test for TMVA
+		difference_tmp=difference_tmp*evt_weight;
+		//if(jentry<10 && (iEpoch%100==0))
+		//	cout<<"jentry="<<jentry<<" isSig="<<isSig<<" discriminant="<<discriminant<<endl;
+		//if(jentry>=nentries_s_tmp && jentry<nentries_s_tmp+10 && (iEpoch%100==0))
+		//	cout<<"jentry="<<jentry<<" isSig="<<isSig<<" discriminant="<<discriminant<<endl;
+		estimator=estimator+difference_tmp;
+	}
+	estimator=estimator/sum_weight_tmp;
+
+	return estimator;
+}
+
 void simpleBP::Eval(){
-	b_s->Init(train_s);
-	b_b->Init(train_b);
+	//b_s->Init(train_s);
+	//b_b->Init(train_b);
 	tout_train_s = train_s->CloneTree(0);
 	tout_train_s->Branch("discriminant",&discriminant,"discriminant/D");
 	for(int i=0;i<nLayer+1;i++){
@@ -577,7 +698,7 @@ void simpleBP::Eval(){
 		tout_train_b->Fill();
 	}
 
-	b_s->Init(test_s);
+	//b_s->Init(test_s);
 	tout_test_s = new TTree();
 	tout_test_s = test_s->CloneTree(0);
 	tout_test_s->Branch("discriminant",&discriminant,"discriminant/D"); 
@@ -588,11 +709,11 @@ void simpleBP::Eval(){
 	}
 	for (Long64_t jentry=0; jentry<nentries_s_test;jentry++){
 		test_s->GetEntry(jentry);
-		calculate(b_s);
+		calculate(b_s_test);
 		tout_test_s->Fill();
 	}
 
-	b_b->Init(test_b);
+	//b_b->Init(test_b);
 	tout_test_b = new TTree();
 	tout_test_b = test_b->CloneTree(0);
 	tout_test_b->Branch("discriminant",&discriminant,"discriminant/D"); 
@@ -603,7 +724,7 @@ void simpleBP::Eval(){
 	}
 	for (Long64_t jentry=0; jentry<nentries_b_test;jentry++){
 		test_b->GetEntry(jentry);
-		calculate(b_b);
+		calculate(b_b_test);
 		tout_test_b->Fill();
 	}
 

@@ -9,13 +9,15 @@ void MyRun(){
 	gROOT->ProcessLine(Form("simpleBP s(\"%s\",\"%s\",\"%s\",\"%s\")",sFilename.Data(),bFilename.Data(),treeName.Data(),outFilename.Data()));
 	gROOT->ProcessLine(Form("s.AddVariable(\"x\",\"D\")"));
 	gROOT->ProcessLine(Form("s.AddVariable(\"y\",\"D\")"));
-	gROOT->ProcessLine(Form("s.AddVariable(\"z\",\"D\")"));
+	//gROOT->ProcessLine(Form("s.AddVariable(\"z\",\"D\")"));
 	gROOT->ProcessLine(Form("s.SetNLayer(1)"));
-	//gROOT->ProcessLine(Form("s.SetNNodes(1,2)"));
-	gROOT->ProcessLine(Form("s.SetNNodes(1,4)"));
+	gROOT->ProcessLine(Form("s.SetNNodes(1,2)"));
+	//gROOT->ProcessLine(Form("s.SetNNodes(1,4)"));
 	gROOT->ProcessLine(Form("s.SetEta(0.02)"));
 	gROOT->ProcessLine(Form("s.SetDecayRate(0.01)"));
 	gROOT->ProcessLine(Form("s.SetNEpochs(200)"));
+	gROOT->ProcessLine(Form("s.SetTestRate(1)"));
+	//gROOT->ProcessLine(Form("s.SetTestRate(10)"));
 	//gROOT->ProcessLine(Form("s.SetThreshold(0.1)"));
 	gROOT->ProcessLine(Form("s.SetThreshold(0.)"));
 	gROOT->ProcessLine(Form("s.SetMinDeviate(0.1)"));
