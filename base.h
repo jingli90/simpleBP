@@ -47,7 +47,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree *tree);
-   virtual void     Loop();
+   //virtual void     Loop();
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 	virtual Double_t GetVal(TString varName);
@@ -55,7 +55,8 @@ public :
 
 #endif
 
-#ifdef base_cxx
+//#ifdef base_cxx
+#ifdef simpleBP_cxx
 base::base(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file

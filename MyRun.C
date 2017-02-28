@@ -3,8 +3,8 @@ void MyRun(){
 	TString bFilename = "background_10000.root";
 	TString treeName = "t";
 	TString outFilename = "output.root";
-	gROOT->ProcessLine(".L base.C++");
-	gROOT->ProcessLine(".L base_plot.h+");
+	//gROOT->ProcessLine(".L base.C+");
+	//gROOT->ProcessLine(".L base_plot.h+");
 	gROOT->ProcessLine(".L simpleBP.C+");
 	gROOT->ProcessLine(Form("simpleBP s(\"%s\",\"%s\",\"%s\",\"%s\")",sFilename.Data(),bFilename.Data(),treeName.Data(),outFilename.Data()));
 	gROOT->ProcessLine(Form("s.AddVariable(\"x\",\"D\")"));
@@ -18,6 +18,10 @@ void MyRun(){
 	gROOT->ProcessLine(Form("s.SetNEpochs(200)"));
 	gROOT->ProcessLine(Form("s.SetTestRate(1)"));
 	//gROOT->ProcessLine(Form("s.SetTestRate(10)"));
+	gROOT->ProcessLine(Form("s.SetCut(\"r<1\", \"Signal\")"));
+	gROOT->ProcessLine(Form("s.SetCut(\"r>2\", \"Background\")"));
+	gROOT->ProcessLine(Form("s.SetWeightExpression(\"weight\")"));
+	gROOT->ProcessLine(Form("s.IsPrintEvolution(false)"));
 	//gROOT->ProcessLine(Form("s.SetThreshold(0.1)"));
 	gROOT->ProcessLine(Form("s.SetThreshold(0.)"));
 	gROOT->ProcessLine(Form("s.SetMinDeviate(0.1)"));

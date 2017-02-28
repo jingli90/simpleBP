@@ -10,6 +10,8 @@ using namespace std;
 #include <TTree.h>
 #include <TDirectory.h>
 
+#ifdef simpleBP_cxx
+
 TH1D* GetHistoWeight(TTree* t, string variable, int nbins, double xmin, double xmax, string cut, string weight, string name){
 	string sxmin, sxmax, snbins;
 	stringstream ss[3];
@@ -108,3 +110,5 @@ TGraph * GetEffSvsEffB(TTree* Signal, TTree* Background, string presel_sig, stri
 	return GraphEff;
 
 }
+
+#endif

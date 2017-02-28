@@ -4,6 +4,7 @@
 #include <iostream>
 using namespace std;
 #include <vector>
+#include <time.h>
 
 #include <TROOT.h>
 #include <TStyle.h>
@@ -34,6 +35,8 @@ class simpleBP{
 		TFile * fout;
 		TChain * c_s;
 		TChain * c_b;
+		TTree * t_s_cut;
+		TTree * t_b_cut;
 		base * b_s;
 		base * b_b;
 		base * b_s_test;
@@ -68,6 +71,10 @@ class simpleBP{
 		double threshold;
 		double minDev;
 		int TestRate;
+		TString cut_s;
+		TString cut_b;
+		TString weightExpression;
+		bool isPrintEvolution;
 		vector<double>* var;
 		vector<double>* net[20];
 		vector<double>* o[20];
@@ -96,11 +103,14 @@ class simpleBP{
 		virtual void SetNLayer(int nlayer);
 		virtual void SetNNodes(int i, int nnodes);
 		virtual void SetEta(double Eta);
-		void SetDecayRate(double rate){decay_rate=rate;}
-		void SetNEpochs(int N){nEpochs=N;}
-		void SetTestRate(int N){TestRate=N;}
+		void SetDecayRate(double rate){decay_rate=rate;cout<<"Decay rate = "<<rate<<endl;}
+		void SetNEpochs(int N){nEpochs=N;cout<<"nEpochs = "<< N <<endl;}
+		void SetTestRate(int N){TestRate=N;cout<<"TestRate = "<< N <<endl;}
 		virtual void SetThreshold(double Th);
 		virtual void SetMinDeviate(double Dev);
+		virtual void SetCut(TString& cut, TString& className);
+		void SetWeightExpression(TString expression){weightExpression=expression; cout<<"Weight expression is: \""<< weightExpression<<"\""<<endl;}
+		void IsPrintEvolution(bool b){isPrintEvolution=b; cout<<"isPrintEvolution="<<isPrintEvolution<<endl;}
 		virtual void InitParameters();
 		virtual void InitTrees();
 		virtual void doTraining();
@@ -186,21 +196,9 @@ void simpleBP::SetNNodes(int i, int nnodes){
 }
 
 void simpleBP::AddVariable(TString var, TString type){
-	cout<<"Init input variable "<<var_input->size()<<endl;
+	cout<<"Add input variable "<<var<<endl;
 	var_input->push_back(var);
 	type_input->push_back(type); 
-	double var0Max=TMath::Max(c_s->GetMaximum(var.Data()),c_b->GetMaximum(var.Data()));
-	double var0Min=TMath::Min(c_s->GetMinimum(var.Data()),c_b->GetMinimum(var.Data()));
-	cout<<var<<":["<<var0Min<<","<<var0Max<<"]"<<endl;
-	double var0Max_int= ceil(var0Max);
-	double var0Min_int=floor(var0Min);
-	cout<<var<<"_int:["<<var0Min_int<<","<<var0Max_int<<"]"<<endl;
-	var_max->push_back(var0Max);
-	var_min->push_back(var0Min);
-	var_max_int->push_back(var0Max_int);
-	var_min_int->push_back(var0Min_int);
-
-	nNodes[0]=var_input->size();
 }
 
 void simpleBP::SetEta(double Eta){
@@ -218,8 +216,38 @@ void simpleBP::SetMinDeviate(double Dev){
 	cout<<"Min Deviate="<<minDev<<endl;
 }
 
+void simpleBP::SetCut(TString& cut, TString& className){
+	if(className=="Signal"){
+		cut_s = cut;
+		cout<<"Cut on signal sample: "<<cut_s<<endl;
+	}
+	else if(className=="Background"){
+		cut_b = cut;
+		cout<<"Cut on background sample: "<<cut_b<<endl;
+	}
+	else{
+		cout<<"Error! Cut init failed!"<<endl;
+	}
+}
+
 void simpleBP::InitParameters(){
+	for(int ivar=0;ivar<var_input->size();ivar++){
+		cout<<"Init input variable "<<ivar<<endl;
+		TString var_name=var_input->at(ivar);
+		double var0Max=TMath::Max(c_s->GetMaximum(var_name.Data()),c_b->GetMaximum(var_name.Data()));
+		double var0Min=TMath::Min(c_s->GetMinimum(var_name.Data()),c_b->GetMinimum(var_name.Data()));
+		cout<<var_name<<":["<<var0Min<<","<<var0Max<<"]"<<endl;
+		double var0Max_int= ceil(var0Max);
+		double var0Min_int=floor(var0Min);
+		cout<<var_name<<"_int:["<<var0Min_int<<","<<var0Max_int<<"]"<<endl;
+		var_max->push_back(var0Max);
+		var_min->push_back(var0Min);
+		var_max_int->push_back(var0Max_int);
+		var_min_int->push_back(var0Min_int);
+	}
+	nNodes[0]=var_input->size();
 	cout<<endl;
+
 	cout<<"Init weights:"<<endl;
 	gRandom = new TRandom3();
 	gRandom->SetSeed(0);
@@ -255,10 +283,12 @@ void simpleBP::InitParameters(){
 void simpleBP::InitTrees(){
 	cout<<endl;
 	cout<<"Init test and training trees ..."<<endl;
+	t_s_cut = c_s->CopyTree(cut_s.Data());
+	t_b_cut = c_b->CopyTree(cut_b.Data());
 	nentries=0, nentries_s=0, nentries_b=0;
 	nentries_s_train=0, nentries_b_train=0, nentries_s_test=0, nentries_b_test=0;
-	nentries_s = c_s->GetEntries();
-	nentries_b = c_b->GetEntries();
+	nentries_s = t_s_cut->GetEntries();
+	nentries_b = t_b_cut->GetEntries();
 
 	if(nentries_s==nentries_b){
 		nentries=nentries_s;
@@ -267,29 +297,29 @@ void simpleBP::InitTrees(){
 	else{
 		cout<<"Attention! sig & bkg have different entries!"<<endl;
 		nentries=TMath::Min(nentries_s,nentries_b);
-		cout<<"signal: "<<nentries_s<<" background: "<<nentries_b;
+		cout<<"signal: "<<nentries_s<<" background: "<<nentries_b<<endl;
 		//cout<<"total: "<<nentries<<endl;
 	}
 
 	train_s = new TTree();
-	train_s = c_s->CloneTree(0);
+	train_s = t_s_cut->CloneTree(0);
 	for (Long64_t jentry=0; jentry<nentries_s;jentry=jentry+2.){
-		c_s->GetEntry(jentry);
+		t_s_cut->GetEntry(jentry);
 		train_s->Fill();
 		nentries_s_train++;
 	}
 	train_b = new TTree();	
-	train_b = c_b->CloneTree(0);
+	train_b = t_b_cut->CloneTree(0);
 	for (Long64_t jentry=0; jentry<nentries_b;jentry=jentry+2.){
-		c_b->GetEntry(jentry);
+		t_b_cut->GetEntry(jentry);
 		train_b->Fill();
 		nentries_b_train++;
 	}
 
 	test_s = new TTree();
-	test_s = c_s->CloneTree(0);
+	test_s = t_s_cut->CloneTree(0);
 	for (Long64_t jentry=1; jentry<nentries_s;jentry=jentry+2.){
-		c_s->GetEntry(jentry);
+		t_s_cut->GetEntry(jentry);
 		test_s->Fill();
 		nentries_s_test++;
 	}
@@ -297,7 +327,7 @@ void simpleBP::InitTrees(){
 	test_b = new TTree();
 	test_b = c_b->CloneTree(0);
 	for (Long64_t jentry=1; jentry<nentries_b;jentry=jentry+2.){
-		c_b->GetEntry(jentry);
+		t_b_cut->GetEntry(jentry);
 		test_b->Fill();
 		nentries_b_test++;
 	}
@@ -316,13 +346,10 @@ void simpleBP::doTraining(){
 	cout<<endl;
 	cout<<"start training ..."<<endl;
 
-	//b_s->Init(train_s);
-	//b_b->Init(train_b);
-	//b_s_test->Init(test_s);
-	//b_b_test->Init(test_b);
+	clock_t start, finish;
+	double duration;
+	start = clock();
 
-	//g_variance_HistTrain = new TH1D( "estimatorHistTrain", "training estimator", nEpochs, 0., nEpochs );
-	//g_variance_HistTest = new TH1D( "estimatorHistTest", "test estimator", nEpochs, 0., nEpochs );
 	Int_t nbinTest = Int_t(nEpochs/TestRate);
 	g_variance_HistTrain = new TH1D( "estimatorHistTrain", "training estimator", nbinTest, Int_t(TestRate/2), nbinTest*TestRate+Int_t(TestRate/2));
 	g_variance_HistTest = new TH1D( "estimatorHistTest", "test estimator", nbinTest, Int_t(TestRate/2), nbinTest*TestRate+Int_t(TestRate/2) );
@@ -368,14 +395,14 @@ void simpleBP::doTraining(){
 				isSig=1;
 				b_s->GetEntry(jentry_tmp);
 				calculate(b_s);
-				evt_weight=b_s->weight;
+				evt_weight=b_s->GetVal(weightExpression);
 			}
 			else{
 				//isSig=-1;
 				isSig=0; // test for TMVA
 				b_b->GetEntry(jentry_tmp-nentries_s_train);
 				calculate(b_b);
-				evt_weight=b_b->weight;
+				evt_weight=b_b->GetVal(weightExpression);
 			}
 
 			sum_weight=sum_weight+evt_weight;
@@ -392,21 +419,23 @@ void simpleBP::doTraining(){
 				back_propogation(isSig);
 			}
 
-			for(int i=1;i<=nLayer+1;i++){
-				for(int j=1;j<=nNodes[i];j++){
-					for(int k=0;k<=nNodes[i-1];k++){
-						g_weight[i]->at(j)->at(k)->SetPoint(iPoint,iPoint,weight[i]->at(j)->at(k));
+			if(isPrintEvolution){
+				for(int i=1;i<=nLayer+1;i++){
+					for(int j=1;j<=nNodes[i];j++){
+						for(int k=0;k<=nNodes[i-1];k++){
+							g_weight[i]->at(j)->at(k)->SetPoint(iPoint,iPoint,weight[i]->at(j)->at(k));
+						}
 					}
 				}
+				g_difference->SetPoint(iPoint,iPoint,difference);
+				iPoint++;
 			}
-			g_difference->SetPoint(iPoint,iPoint,difference);
-			iPoint++;
 		}
 		//cout<<"largest diff:"<<difference_largest<<endl;
 		//cout<<"sum_weight:"<<sum_weight<<endl;
 		variance=variance/sum_weight;
 		//cout<<"variance="<<variance<<endl;
-		g_variance->SetPoint(N_loop-1, N_loop, variance);
+		//g_variance->SetPoint(N_loop-1, N_loop, variance);
 		if(N_loop%TestRate==0){
 			trainE = CalculateEstimator( "Training", N_loop );
 			testE  = CalculateEstimator( "Testing",  N_loop );
@@ -454,43 +483,47 @@ void simpleBP::doTraining(){
 			cout<<endl;
 		}
 	}
-	for(int i=1;i<=nLayer+1;i++){
-		//cout<<"Inner layer "<<i-1<<" to "<<i<<endl;
-		for(int j=1;j<=nNodes[i];j++){
-			for(int k=0;k<=nNodes[i-1];k++){
-				c->Clear();
-				g_weight[i]->at(j)->at(k)->GetYaxis()->SetTitleOffset(1.5);
-				g_weight[i]->at(j)->at(k)->Draw("AP");
-				ltx->DrawLatex(0.15,0.85,Form("#splitline{nEntries=%d, nLoop=%d}{w_{%d%d}=%f}", nentries_s_train+nentries_b_train, N_loop, j, k, weight[i]->at(j)->at(k)));
-				c->SaveAs(Form("layer%dtolayer%d_w%d%d.png", i-1, i, j, k));
+	if(isPrintEvolution){
+		for(int i=1;i<=nLayer+1;i++){
+			//cout<<"Inner layer "<<i-1<<" to "<<i<<endl;
+			for(int j=1;j<=nNodes[i];j++){
+				for(int k=0;k<=nNodes[i-1];k++){
+					c->Clear();
+					g_weight[i]->at(j)->at(k)->GetYaxis()->SetTitleOffset(1.5);
+					g_weight[i]->at(j)->at(k)->Draw("AP");
+					ltx->DrawLatex(0.15,0.85,Form("#splitline{nEntries=%d, nLoop=%d}{w_{%d%d}=%f}", nentries_s_train+nentries_b_train, N_loop, j, k, weight[i]->at(j)->at(k)));
+					c->SaveAs(Form("layer%dtolayer%d_w%d%d.png", i-1, i, j, k));
+				}
+				//cout<<endl;
 			}
-			cout<<endl;
 		}
 	}
 
-	c->Clear();
-	TPad * p1 = new TPad("p1","p1", 0.00,0.00,1.00,0.97);
-	p1->SetFillColor(0);
-	p1->Draw();
-	p1->SetLeftMargin(0.14);
-	p1->cd();
-	g_difference->SetTitle(";Event;(#hat{y}-y)^{2}/2");
-	g_difference->GetYaxis()->SetTitleOffset(2);
-	g_difference->Draw("AP");
-	ltx->DrawLatex(0.15,0.85,Form("nEntries=%d, nLoop=%d", nentries_s_train+nentries_b_train, N_loop));
-	c->SaveAs("difference.png");
+	if(isPrintEvolution){
+		c->Clear();
+		TPad * p1 = new TPad("p1","p1", 0.00,0.00,1.00,0.97);
+		p1->SetFillColor(0);
+		p1->Draw();
+		p1->SetLeftMargin(0.14);
+		p1->cd();
+		g_difference->SetTitle(";Event;(#hat{y}-y)^{2}/2");
+		g_difference->GetYaxis()->SetTitleOffset(2);
+		g_difference->Draw("AP");
+		ltx->DrawLatex(0.15,0.85,Form("nEntries=%d, nLoop=%d", nentries_s_train+nentries_b_train, N_loop));
+		c->SaveAs("difference.png");
+	}
 
-	c->Clear();
+	//c->Clear();
 	TPad * p2 = new TPad("p2","p2", 0.00,0.00,1.00,0.97);
-	p2->SetFillColor(0);
-	p2->Draw();
-	p2->SetLeftMargin(0.14);
-	p2->cd();
-	g_variance->SetTitle(";Epoch;#Sigma (w*(#hat{y}-y))^{2}/2/Sumw");
-	g_variance->GetYaxis()->SetTitleOffset(2);
-	g_variance->Draw("AP*");
-	ltx->DrawLatex(0.15,0.85,Form("nEntries=%d, nLoop=%d", nentries_s_train+nentries_b_train, N_loop));
-	c->SaveAs("variance.png");
+	//p2->SetFillColor(0);
+	//p2->Draw();
+	//p2->SetLeftMargin(0.14);
+	//p2->cd();
+	//g_variance->SetTitle(";Epoch;#Sigma (w*(#hat{y}-y))^{2}/2/Sumw");
+	//g_variance->GetYaxis()->SetTitleOffset(2);
+	//g_variance->Draw("AP*");
+	//ltx->DrawLatex(0.15,0.85,Form("nEntries=%d, nLoop=%d", nentries_s_train+nentries_b_train, N_loop));
+	//c->SaveAs("variance.png");
 
 	c->Clear();
 	p2=new TPad("p2","p2", 0.00,0.00,1.00,0.97);
@@ -513,6 +546,11 @@ void simpleBP::doTraining(){
 	legend->AddEntry("estimatorHistTest", "Test Sample", "l");
 	legend->Draw();
 	c->SaveAs("annconvergencetest.png");
+
+	finish = clock();
+	duration = (double)(finish-start)/CLOCKS_PER_SEC;
+	//cout<<"CLOCKS_PER_SEC="<<CLOCKS_PER_SEC<<endl;
+	cout<<"duration="<<duration<<"sec"<<endl;
 }
 
 void simpleBP::calculate(base * b){
@@ -650,19 +688,19 @@ Double_t simpleBP::CalculateEstimator( TString treeType, Int_t iEpoch ){
 			isSig=1;
 			b_s_tmp->GetEntry(jentry);
 			calculate(b_s_tmp);
-			evt_weight_tmp=b_s_tmp->weight;
+			evt_weight_tmp=b_s->GetVal(weightExpression);
 		}
 		else{
 			//isSig=-1;
 			isSig=0; // test for TMVA
 			b_b_tmp->GetEntry(jentry-nentries_s_tmp);
 			calculate(b_b_tmp);
-			evt_weight_tmp=b_b_tmp->weight;
+			evt_weight_tmp=b_b->GetVal(weightExpression);
 		}
 		sum_weight_tmp=sum_weight_tmp+evt_weight_tmp;
 		//difference_tmp=(discriminant-isSig)*(discriminant-isSig)/2.;
 		difference_tmp=(discriminant-isSig)*(discriminant-isSig); // test for TMVA
-		difference_tmp=difference_tmp*evt_weight;
+		difference_tmp=difference_tmp*evt_weight_tmp;
 		//if(jentry<10 && (iEpoch%100==0))
 		//	cout<<"jentry="<<jentry<<" isSig="<<isSig<<" discriminant="<<discriminant<<endl;
 		//if(jentry>=nentries_s_tmp && jentry<nentries_s_tmp+10 && (iEpoch%100==0))
@@ -675,8 +713,6 @@ Double_t simpleBP::CalculateEstimator( TString treeType, Int_t iEpoch ){
 }
 
 void simpleBP::Eval(){
-	//b_s->Init(train_s);
-	//b_b->Init(train_b);
 	tout_train_s = train_s->CloneTree(0);
 	tout_train_s->Branch("discriminant",&discriminant,"discriminant/D");
 	for(int i=0;i<nLayer+1;i++){
@@ -684,6 +720,12 @@ void simpleBP::Eval(){
 			tout_train_s->Branch(Form("l%dn%d",i,j), &(o[i]->at(j)), Form("l%dn%d/D",i,j) );
 		}
 	}
+	for (Long64_t jentry=0; jentry<nentries_s_train;jentry++){
+		train_s->GetEntry(jentry);
+		calculate(b_s);
+		tout_train_s->Fill();
+	}
+
 	tout_train_b = new TTree();	
 	tout_train_b = train_b->CloneTree(0);
 	tout_train_b->Branch("discriminant",&discriminant,"discriminant/D");	
@@ -692,16 +734,12 @@ void simpleBP::Eval(){
 			tout_train_b->Branch(Form("l%dn%d",i,j), &(o[i]->at(j)), Form("l%dn%d/D",i,j) );
 		}
 	}
-	for (Long64_t jentry=0; jentry<nentries_s_train;jentry++){
-		train_s->GetEntry(jentry);
-		calculate(b_s);
-		tout_train_s->Fill();
+	for (Long64_t jentry=0; jentry<nentries_b_train;jentry++){
 		train_b->GetEntry(jentry);
 		calculate(b_b);
 		tout_train_b->Fill();
 	}
 
-	//b_s->Init(test_s);
 	tout_test_s = new TTree();
 	tout_test_s = test_s->CloneTree(0);
 	tout_test_s->Branch("discriminant",&discriminant,"discriminant/D"); 
@@ -716,7 +754,6 @@ void simpleBP::Eval(){
 		tout_test_s->Fill();
 	}
 
-	//b_b->Init(test_b);
 	tout_test_b = new TTree();
 	tout_test_b = test_b->CloneTree(0);
 	tout_test_b->Branch("discriminant",&discriminant,"discriminant/D"); 
@@ -934,6 +971,9 @@ void simpleBP::plotWeights(){
 	ltx->SetTextFont(22);
 	ltx->SetTextSize(0.03);
 
+	ltx->DrawLatex(x_ltx,y_ltx,Form("#splitline{nEntries_sig=%d, nEntries_bkg=%d, nEntries=%d}{nEpochs=%d}",nentries_s_train, nentries_b_train, nentries_s_train+nentries_b_train, nEpochs));
+	y_ltx = y_ltx-2*dy;
+
 	for(int i=1;i<=nLayer+1;i++){
 		ltx->DrawLatex(x_ltx,y_ltx,Form("Layer %d to %d", i-1, i));
 		y_ltx=y_ltx-dy;
@@ -954,6 +994,7 @@ void simpleBP::plotWeights(){
 	}
 
 	c->SaveAs("myWeights.png");
+	c->SaveAs("myWeights.pdf");
 }
 
 void simpleBP::Shuffle(Int_t* index, Int_t n){

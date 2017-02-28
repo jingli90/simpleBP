@@ -2,8 +2,8 @@
 #include "simpleBP.h"
 
 void simpleBP::myana(){
-	InitParameters();
 	InitTrees();
+	InitParameters();
 	doTraining();
 	Eval();
 	plotHist();
