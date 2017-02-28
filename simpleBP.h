@@ -234,8 +234,8 @@ void simpleBP::InitParameters(){
 	for(int ivar=0;ivar<var_input->size();ivar++){
 		cout<<"Init input variable "<<ivar<<endl;
 		TString var_name=var_input->at(ivar);
-		double var0Max=TMath::Max(c_s->GetMaximum(var_name.Data()),c_b->GetMaximum(var_name.Data()));
-		double var0Min=TMath::Min(c_s->GetMinimum(var_name.Data()),c_b->GetMinimum(var_name.Data()));
+		double var0Max=TMath::Max(t_s_cut->GetMaximum(var_name.Data()),t_b_cut->GetMaximum(var_name.Data()));
+		double var0Min=TMath::Min(t_s_cut->GetMinimum(var_name.Data()),t_b_cut->GetMinimum(var_name.Data()));
 		cout<<var_name<<":["<<var0Min<<","<<var0Max<<"]"<<endl;
 		double var0Max_int= ceil(var0Max);
 		double var0Min_int=floor(var0Min);

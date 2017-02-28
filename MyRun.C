@@ -22,6 +22,7 @@ void MyRun(){
 	gROOT->ProcessLine(Form("s.SetCut(\"r>2\", \"Background\")"));
 	gROOT->ProcessLine(Form("s.SetWeightExpression(\"weight\")"));
 	gROOT->ProcessLine(Form("s.IsPrintEvolution(false)"));
+	//gROOT->ProcessLine(Form("s.IsPrintEvolution(true)"));
 	//gROOT->ProcessLine(Form("s.SetThreshold(0.1)"));
 	gROOT->ProcessLine(Form("s.SetThreshold(0.)"));
 	gROOT->ProcessLine(Form("s.SetMinDeviate(0.1)"));
