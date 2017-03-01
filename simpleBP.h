@@ -91,6 +91,8 @@ class simpleBP{
 		double deltaDis;
 		vector<double>* delta[20];
 
+		double duration;
+
 		double sum_weight;
 		double evt_weight;
 
@@ -376,7 +378,6 @@ void simpleBP::doTraining(){
 	cout<<"start training ..."<<endl;
 
 	clock_t start, finish;
-	double duration;
 	start = clock();
 
 	Int_t nbinTest = Int_t(nEpochs/TestRate);
@@ -991,12 +992,12 @@ void simpleBP::plotROC(){
 
 void simpleBP::plotWeights(){
 
-	c->cd();
-	c->Clear();
+	TCanvas * c_weights=new TCanvas("c_weights","c_weights",10,10,700,1400);
+	c_weights->cd();
 
 	double x_ltx=0.1, y_ltx=0.9;
 	double dx=0.2;
-	double dy=0.04;
+	double dy=0.02;
 
 	TLatex * ltx = new TLatex();
 	ltx->SetNDC(kTRUE);
@@ -1025,8 +1026,10 @@ void simpleBP::plotWeights(){
 		}
 	}
 
-	c->SaveAs("myWeights.png");
-	c->SaveAs("myWeights.pdf");
+	ltx->DrawLatex(x_ltx,y_ltx,Form("duration = %.0f sec", duration));
+
+	c_weights->SaveAs("myWeights.png");
+	c_weights->SaveAs("myWeights.pdf");
 }
 
 void simpleBP::Shuffle(Int_t* index, Int_t n){
