@@ -820,10 +820,10 @@ void simpleBP::plotHist(){
 	p1->Draw();
 	p1->SetLeftMargin(0.14);
 	p1->cd();
-	TH1D * h_s_train = GetHistoWeight(tout_train_s, "discriminant", 50, -1., 1., "1==1", "weight", "h_s_train");
-	TH1D * h_b_train = GetHistoWeight(tout_train_b, "discriminant", 50, -1., 1., "1==1", "weight", "h_b_train");
-	TH1D * h_s_test = GetHistoWeight(tout_test_s, "discriminant", 50, -1., 1., "1==1", "weight", "h_s_test");
-	TH1D * h_b_test = GetHistoWeight(tout_test_b, "discriminant", 50, -1., 1., "1==1", "weight", "h_b_test");
+	TH1D * h_s_train = GetHistoWeight(tout_train_s, "discriminant", 50, -1., 1., cut_s.Data(), weightExpression.Data(), "h_s_train");
+	TH1D * h_b_train = GetHistoWeight(tout_train_b, "discriminant", 50, -1., 1., cut_b.Data(), weightExpression.Data(), "h_b_train");
+	TH1D * h_s_test  = GetHistoWeight(tout_test_s,  "discriminant", 50, -1., 1., cut_s.Data(), weightExpression.Data(), "h_s_test");
+	TH1D * h_b_test  = GetHistoWeight(tout_test_b,  "discriminant", 50, -1., 1., cut_b.Data(), weightExpression.Data(), "h_b_test");
 
 	h_s_test->SetLineColor(2);
 	h_b_test->SetLineColor(1);
@@ -882,10 +882,10 @@ void simpleBP::plotHist(){
 			p1->Draw();
 			p1->SetLeftMargin(0.14);
 			p1->cd();
-			h_s_train = GetHistoWeight(tout_train_s, Form("l%dn%d",i,j), 50, -1., 1., "1==1", "weight", "h_s_train");
-			h_b_train = GetHistoWeight(tout_train_b, Form("l%dn%d",i,j), 50, -1., 1., "1==1", "weight", "h_b_train");
-			h_s_test = GetHistoWeight(tout_test_s,   Form("l%dn%d",i,j), 50, -1., 1., "1==1", "weight", "h_s_test");
-			h_b_test = GetHistoWeight(tout_test_b,   Form("l%dn%d",i,j), 50, -1., 1., "1==1", "weight", "h_b_test");
+			h_s_train = GetHistoWeight(tout_train_s, Form("l%dn%d",i,j), 50, -1., 1., cut_s.Data(), weightExpression.Data(), "h_s_train");
+			h_b_train = GetHistoWeight(tout_train_b, Form("l%dn%d",i,j), 50, -1., 1., cut_b.Data(), weightExpression.Data(), "h_b_train");
+			h_s_test  = GetHistoWeight(tout_test_s,  Form("l%dn%d",i,j), 50, -1., 1., cut_s.Data(), weightExpression.Data(), "h_s_test");
+			h_b_test  = GetHistoWeight(tout_test_b,  Form("l%dn%d",i,j), 50, -1., 1., cut_b.Data(), weightExpression.Data(), "h_b_test");
 
 			h_s_test->SetLineColor(2);
 			h_b_test->SetLineColor(1);
@@ -932,7 +932,7 @@ void simpleBP::plotROC(){
 	p1->SetGridx();
 	p1->SetGridy();
 	p1->cd();
-	TGraph * g_ROC_train=GetEffSvsEffB(tout_train_s, tout_train_b, "1==1", "1==1", "discriminant", -1, 1, "weight", 50, "g_ROC_train");
+	TGraph * g_ROC_train=GetEffSvsEffB(tout_train_s, tout_train_b, cut_s.Data(), cut_b.Data(), "discriminant", -1, 1, weightExpression.Data(), 50, "g_ROC_train");
 	TH2D* hGrid = new TH2D("Grid","Grid",1000,0,1,1000,0,1);
 	hGrid->Draw();
 	hGrid->SetTitle("training sample");
@@ -968,7 +968,7 @@ void simpleBP::plotROC(){
 	p2->SetGridx();
 	p2->SetGridy();
 	p2->cd();
-	TGraph * g_ROC_test=GetEffSvsEffB(tout_test_s, tout_test_b, "1==1", "1==1", "discriminant", -1, 1, "weight", 50, "g_ROC_test");
+	TGraph * g_ROC_test=GetEffSvsEffB(tout_test_s, tout_test_b, cut_s.Data(), cut_b.Data(), "discriminant", -1, 1, weightExpression.Data(), 50, "g_ROC_test");
 	hGrid->SetTitle("test sample");
 	hGrid->Draw();
 	g_ROC_test->Draw("*same");
