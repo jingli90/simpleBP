@@ -64,7 +64,7 @@ TGraph * GetEffSvsEffB(TTree* Signal, TTree* Background, string presel_sig, stri
 	double* Eff_bg = new double[nbins];
 	double* Eff_err_bg = new double[nbins];
 
-	stringstream ss[nbins+1];
+	//stringstream ss[nbins+1];
 	string svalcut;
 	string scut;
 
@@ -87,8 +87,8 @@ TGraph * GetEffSvsEffB(TTree* Signal, TTree* Background, string presel_sig, stri
 	for (int i=1; i<=nbins; i++){
 		double valcut = valmax*((double)i)/((double)nbins) + valmin*(1-((double)i)/((double)nbins));
 
-		ss[i] << valcut;
-		ss[i] >> svalcut;
+		//ss[i] << valcut;
+		//ss[i] >> svalcut;
 
 		double num_sg = Histo_sg->Integral(i, nbins);
 		double num_bg = Histo_bg->Integral(i, nbins);

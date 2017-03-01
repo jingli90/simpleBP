@@ -25,6 +25,7 @@ using namespace std;
 
 #include "base.h"
 #include "base_plot.h"
+#include "base_function.h"
 
 class simpleBP{
 	public:
@@ -58,6 +59,8 @@ class simpleBP{
 		Long64_t nentries_b_train;
 		vector<TString>* var_input;
 		vector<TString>* type_input;
+		vector<TString>* spectator_var_input;
+		vector<TString>* spectator_type_input;
 		vector<double>* var_max;
 		vector<double>* var_min;
 		vector<double>* var_max_int;
@@ -75,6 +78,7 @@ class simpleBP{
 		TString cut_b;
 		TString weightExpression;
 		bool isPrintEvolution;
+		TString NeuronType;
 		vector<double>* var;
 		vector<double>* net[20];
 		vector<double>* o[20];
@@ -100,6 +104,7 @@ class simpleBP{
 		simpleBP(TString SignalFile, TString BackgroundFile, TString treename, TString outfilename);
 		virtual void myana();
 		virtual void AddVariable(TString var, TString type);
+		virtual void AddSpectator(TString var, TString type);
 		virtual void SetNLayer(int nlayer);
 		virtual void SetNNodes(int i, int nnodes);
 		virtual void SetEta(double Eta);
@@ -108,9 +113,10 @@ class simpleBP{
 		void SetTestRate(int N){TestRate=N;cout<<"TestRate = "<< N <<endl;}
 		virtual void SetThreshold(double Th);
 		virtual void SetMinDeviate(double Dev);
-		virtual void SetCut(TString& cut, TString& className);
+		virtual void SetCut(const TString& cut, const TString& className);
 		void SetWeightExpression(TString expression){weightExpression=expression; cout<<"Weight expression is: \""<< weightExpression<<"\""<<endl;}
 		void IsPrintEvolution(bool b){isPrintEvolution=b; cout<<"isPrintEvolution="<<isPrintEvolution<<endl;}
+		void SetNeuronType(TString myNeuronType){NeuronType=myNeuronType; cout<<"NeuronType="<<NeuronType<<endl;}
 		virtual void InitParameters();
 		virtual void InitTrees();
 		virtual void doTraining();
@@ -150,6 +156,8 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 
 	var_input = new vector<TString>;
 	type_input = new vector<TString>;
+	spectator_var_input = new vector<TString>;
+	spectator_type_input = new vector<TString>;
 	var_max = new vector<double>;
 	var_min = new vector<double>;
 	var_max_int = new vector<double>;
@@ -177,6 +185,7 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	threshold=0.;
 	minDev=0.1;
 	TestRate=10;
+	NeuronType="tanh";
 }
 
 void simpleBP::SetNLayer(int nlayer){
@@ -196,9 +205,15 @@ void simpleBP::SetNNodes(int i, int nnodes){
 }
 
 void simpleBP::AddVariable(TString var, TString type){
-	cout<<"Add input variable "<<var<<endl;
+	cout<<"Add input variable: "<<var<<endl;
 	var_input->push_back(var);
 	type_input->push_back(type); 
+}
+
+void simpleBP::AddSpectator(TString var, TString type){
+	cout<<"Add spectator: "<<var<<endl;
+	spectator_var_input->push_back(var);
+	spectator_type_input->push_back(type);
 }
 
 void simpleBP::SetEta(double Eta){
@@ -216,7 +231,7 @@ void simpleBP::SetMinDeviate(double Dev){
 	cout<<"Min Deviate="<<minDev<<endl;
 }
 
-void simpleBP::SetCut(TString& cut, TString& className){
+void simpleBP::SetCut(const TString& cut, const TString& className){
 	if(className=="Signal"){
 		cut_s = cut;
 		cout<<"Cut on signal sample: "<<cut_s<<endl;
@@ -283,6 +298,20 @@ void simpleBP::InitParameters(){
 void simpleBP::InitTrees(){
 	cout<<endl;
 	cout<<"Init test and training trees ..."<<endl;
+	c_s->SetBranchStatus("*",0);
+	c_b->SetBranchStatus("*",0);
+	for(int ivar=0;ivar<var_input->size();ivar++){
+		TString var_name=var_input->at(ivar);
+		c_s->SetBranchStatus(var_name.Data(),1);
+		c_b->SetBranchStatus(var_name.Data(),1);
+	}
+	for(int ivar=0;ivar<spectator_var_input->size();ivar++){   
+		TString var_name=spectator_var_input->at(ivar);
+		c_s->SetBranchStatus(var_name.Data(),1);
+		c_b->SetBranchStatus(var_name.Data(),1);
+	}
+	c_s->SetBranchStatus(weightExpression.Data(),1);
+	c_b->SetBranchStatus(weightExpression.Data(),1);
 	t_s_cut = c_s->CopyTree(cut_s.Data());
 	t_b_cut = c_b->CopyTree(cut_b.Data());
 	nentries=0, nentries_s=0, nentries_b=0;
@@ -538,8 +567,8 @@ void simpleBP::doTraining(){
 	g_variance_HistTrain->GetYaxis()->SetTitleOffset(2);
 	g_variance_HistTrain->SetLineColor(1);
 	g_variance_HistTest->SetLineColor(2);
-	g_variance_HistTrain->Draw();
-	g_variance_HistTest->Draw("Same");
+	g_variance_HistTrain->Draw("HIST");
+	g_variance_HistTest->Draw("HISTSame");
 	TLegend* legend = new TLegend(0.7,0.75,0.9,0.9,"");
 	legend->SetFillColor(kWhite);
 	legend->AddEntry("estimatorHistTrain", "Training Sample", "l");
@@ -582,7 +611,8 @@ void simpleBP::calculate(base * b){
 				net_tmp=net_tmp + weight[i]->at(j)->at(k) * o[i-1]->at(k);
 				//cout<<"w"<<j<<k<<endl;
 			}
-			o_tmp=(TMath::Exp(net_tmp)-TMath::Exp(-net_tmp))/(TMath::Exp(net_tmp)+TMath::Exp(-net_tmp));
+			//o_tmp=(TMath::Exp(net_tmp)-TMath::Exp(-net_tmp))/(TMath::Exp(net_tmp)+TMath::Exp(-net_tmp));
+			o_tmp=activation_function(net_tmp, NeuronType);
 			net[i]->push_back(net_tmp);
 			o[i]->push_back(o_tmp);
 		}
@@ -614,7 +644,8 @@ void simpleBP::back_propogation(int isSig){
 		}
 	}
 
-	deltaDis=-(isSig-discriminant)*(1+discriminant)*(1-discriminant);
+	//deltaDis=-(isSig-discriminant)*(1+discriminant)*(1-discriminant);
+	deltaDis=-(isSig-discriminant)*activation_function_dev(discriminant,NeuronType);
 	//cout<<"nLayer+1="<<nLayer+1<<endl;
 	delta[nLayer+1]->clear();
 	delta[nLayer+1]->push_back(0);
@@ -626,7 +657,8 @@ void simpleBP::back_propogation(int isSig){
 		for(int j=0;j<=nNodes[i];j++){
 			double delta_tmp=0;
 			for(int k=1;k<=nNodes[i+1];k++){
-				double tmp_devNetj = ( 1 + o[i]->at(j) ) * ( 1 - o[i]->at(j) );
+				//double tmp_devNetj = ( 1 + o[i]->at(j) ) * ( 1 - o[i]->at(j) );
+				double tmp_devNetj = activation_function_dev(o[i]->at(j), NeuronType);
 				double tmp_wkj = weight_old[i+1]->at(k)->at(j);
 				delta_tmp = delta_tmp + tmp_devNetj  * tmp_wkj * delta[i+1]->at(k);
 			}
@@ -798,14 +830,14 @@ void simpleBP::plotHist(){
 	h_s_test->SetMaximum((1.5*TMath::Max(h_s_test->GetMaximum(), h_b_test->GetMaximum())));
 	h_s_test->SetTitle(";Discriminant; Event / bin");
 	h_s_test->GetYaxis()->SetTitleOffset(1.8);
-	h_s_test->Draw();
-	h_b_test->Draw("same");
+	h_s_test->Draw("HIST");
+	h_b_test->Draw("HISTsame");
 	h_s_train->SetMarkerColor(2);
-	h_s_train->SetMarkerStyle(7);
+	h_s_train->SetMarkerStyle(20);
 	h_b_train->SetMarkerColor(1);
-	h_b_train->SetMarkerStyle(7);
-	h_s_train->Draw("Psame");
-	h_b_train->Draw("Psame");
+	h_b_train->SetMarkerStyle(20);
+	h_s_train->Draw("PEsame");
+	h_b_train->Draw("PEsame");
 
 	TLegend* legend_test = new TLegend(0.15,0.75,0.5,0.9,"");
 	legend_test->SetFillColor(kWhite);
@@ -863,14 +895,14 @@ void simpleBP::plotHist(){
 			else
 				h_s_test->SetTitle(Form(";Output of layer %d node %d;Event / bin",i,j));
 			h_s_test->GetYaxis()->SetTitleOffset(1.8);
-			h_s_test->Draw();
-			h_b_test->Draw("same");
+			h_s_test->Draw("HIST");
+			h_b_test->Draw("HISTsame");
 			h_s_train->SetMarkerColor(2);
-			h_s_train->SetMarkerStyle(7);
+			h_s_train->SetMarkerStyle(20);
 			h_b_train->SetMarkerColor(1);
-			h_b_train->SetMarkerStyle(7);
-			h_s_train->Draw("Psame");
-			h_b_train->Draw("Psame");
+			h_b_train->SetMarkerStyle(20);
+			h_s_train->Draw("PEsame");
+			h_b_train->Draw("PEsame");
 
 			legend_test->Clear();
 			legend_test->SetFillColor(kWhite);
