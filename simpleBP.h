@@ -831,7 +831,8 @@ void simpleBP::plotHist(){
 	h_s_test->SetLineColor(2);
 	h_b_test->SetLineColor(1);
 	h_s_test->SetMaximum((1.5*TMath::Max(h_s_test->GetMaximum(), h_b_test->GetMaximum())));
-	h_s_test->SetTitle(";Discriminant; Event / bin");
+	//h_s_test->SetTitle(";Discriminant; Event / bin");
+	h_s_test->SetTitle(";Discriminant; Unit Area");
 	h_s_test->GetYaxis()->SetTitleOffset(1.8);
 	h_s_test->Sumw2();
 	h_b_test->Sumw2();
@@ -902,9 +903,11 @@ void simpleBP::plotHist(){
 			h_b_test->SetLineColor(1);
 			h_s_test->SetMaximum((1.5*TMath::Max(h_s_test->GetMaximum(),h_b_test->GetMaximum())));
 			if(i==0)
-				h_s_test->SetTitle(Form(";%s (norm);Event / bin",var_input->at(j-1).Data()));
+				//h_s_test->SetTitle(Form(";%s (norm);Event / bin",var_input->at(j-1).Data()));
+				h_s_test->SetTitle(Form(";%s (norm);Unit Area",var_input->at(j-1).Data()));
 			else
-				h_s_test->SetTitle(Form(";Output of layer %d node %d;Event / bin",i,j));
+				//h_s_test->SetTitle(Form(";Output of layer %d node %d;Event / bin",i,j));
+				h_s_test->SetTitle(Form(";Output of layer %d node %d;Unit Area",i,j));
 			h_s_test->GetYaxis()->SetTitleOffset(1.8);
 			h_s_test->Sumw2();
 			h_b_test->Sumw2();
