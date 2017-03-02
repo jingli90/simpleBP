@@ -95,6 +95,7 @@ class simpleBP{
 
 		double sum_weight;
 		double evt_weight;
+		double evt_weight_max;
 
 		TCanvas * c;
 		TGraph * g_difference;
@@ -264,6 +265,8 @@ void simpleBP::InitParameters(){
 	}
 	nNodes[0]=var_input->size();
 	cout<<endl;
+
+	evt_weight_max=TMath::Max(t_s_cut->GetMaximum(weightExpression.Data()), t_b_cut->GetMaximum(weightExpression.Data()));
 
 	cout<<"Init weights:"<<endl;
 	gRandom = new TRandom3();
@@ -675,7 +678,8 @@ void simpleBP::back_propogation(int isSig){
 		//cout<<"Inner layer "<<i-1<<" to "<<i<<endl;
 		for(int j=0;j<=nNodes[i];j++){
 			for(int k=0;k<=nNodes[i-1];k++){
-				double weight_tmp_change =  eta * delta[i]->at(j) * o[i-1]->at(k) * evt_weight;
+				//double weight_tmp_change =  eta * delta[i]->at(j) * o[i-1]->at(k) * evt_weight;
+				double weight_tmp_change =  eta * delta[i]->at(j) * o[i-1]->at(k) * evt_weight / evt_weight_max; // test			--Jing Li @ 2017-03-02 
 				double weight_tmp = weight_old[i]->at(j)->at(k) - weight_tmp_change;
 				weight[i]->at(j)->push_back(weight_tmp);
 				//cout<<"w"<<j<<k<<" = "<<weight[i]->at(j)->at(k)<<" "<<weight_old[i]->at(j)->at(k)<<" ";
