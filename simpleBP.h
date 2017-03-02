@@ -576,6 +576,8 @@ void simpleBP::doTraining(){
 	legend->AddEntry("estimatorHistTest", "Test Sample", "l");
 	legend->Draw();
 	c->SaveAs("annconvergencetest.png");
+	g_variance_HistTrain->Write();
+	g_variance_HistTest->Write();
 
 	finish = clock();
 	duration = (double)(finish-start)/CLOCKS_PER_SEC;
@@ -831,14 +833,18 @@ void simpleBP::plotHist(){
 	h_s_test->SetMaximum((1.5*TMath::Max(h_s_test->GetMaximum(), h_b_test->GetMaximum())));
 	h_s_test->SetTitle(";Discriminant; Event / bin");
 	h_s_test->GetYaxis()->SetTitleOffset(1.8);
-	h_s_test->Draw("HIST");
-	h_b_test->Draw("HISTsame");
+	h_s_test->Sumw2();
+	h_b_test->Sumw2();
+	h_s_test->DrawNormalized("HIST");
+	h_b_test->DrawNormalized("HISTsame");
 	h_s_train->SetMarkerColor(2);
 	h_s_train->SetMarkerStyle(20);
 	h_b_train->SetMarkerColor(1);
 	h_b_train->SetMarkerStyle(20);
-	h_s_train->Draw("PEsame");
-	h_b_train->Draw("PEsame");
+	h_s_train->Sumw2();
+	h_b_train->Sumw2();
+	h_s_train->DrawNormalized("PEsame");
+	h_b_train->DrawNormalized("PEsame");
 
 	TLegend* legend_test = new TLegend(0.15,0.75,0.5,0.9,"");
 	legend_test->SetFillColor(kWhite);
@@ -874,6 +880,10 @@ void simpleBP::plotHist(){
 	//}
 
 	c->Print("discriminant.png");
+	h_s_test->Write("discriminant_s_test");
+	h_b_test->Write("discriminant_b_test");
+	h_s_train->Write("discriminant_s_train");
+	h_b_train->Write("discriminant_b_train");
 
 	for(int i=0;i<nLayer+1;i++){
 		for(int j=1;j<=nNodes[i];j++){
@@ -896,14 +906,18 @@ void simpleBP::plotHist(){
 			else
 				h_s_test->SetTitle(Form(";Output of layer %d node %d;Event / bin",i,j));
 			h_s_test->GetYaxis()->SetTitleOffset(1.8);
-			h_s_test->Draw("HIST");
-			h_b_test->Draw("HISTsame");
+			h_s_test->Sumw2();
+			h_b_test->Sumw2();
+			h_s_test->DrawNormalized("HIST");
+			h_b_test->DrawNormalized("HISTsame");
 			h_s_train->SetMarkerColor(2);
 			h_s_train->SetMarkerStyle(20);
 			h_b_train->SetMarkerColor(1);
 			h_b_train->SetMarkerStyle(20);
-			h_s_train->Draw("PEsame");
-			h_b_train->Draw("PEsame");
+			h_s_train->Sumw2();
+			h_b_train->Sumw2();
+			h_s_train->DrawNormalized("PEsame");
+			h_b_train->DrawNormalized("PEsame");
 
 			legend_test->Clear();
 			legend_test->SetFillColor(kWhite);
@@ -960,6 +974,7 @@ void simpleBP::plotROC(){
 	//	x_ltx=x_ltx+0.2;
 	//}
 	c->SaveAs("ROC_train.png");
+	g_ROC_train->Write();
 
 	c->Clear();
 	TPad * p2 = new TPad("p2","p2", 0.00,0.00,1.00,0.97);
@@ -988,6 +1003,7 @@ void simpleBP::plotROC(){
 	//	x_ltx=x_ltx+0.2;
 	//}
 	c->SaveAs("ROC_test.png");
+	g_ROC_test->Write();
 }
 
 void simpleBP::plotWeights(){
