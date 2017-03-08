@@ -651,7 +651,7 @@ void simpleBP::back_propogation(int isSig){
 	}
 
 	//deltaDis=-(isSig-discriminant)*(1+discriminant)*(1-discriminant);
-	deltaDis=-(isSig-discriminant)*activation_function_dev(discriminant,NeuronType);
+	deltaDis=-(isSig-discriminant)*activation_function_dev(netDis, discriminant,NeuronType);
 	//cout<<"nLayer+1="<<nLayer+1<<endl;
 	delta[nLayer+1]->clear();
 	delta[nLayer+1]->push_back(0);
@@ -664,7 +664,7 @@ void simpleBP::back_propogation(int isSig){
 			double delta_tmp=0;
 			for(int k=1;k<=nNodes[i+1];k++){
 				//double tmp_devNetj = ( 1 + o[i]->at(j) ) * ( 1 - o[i]->at(j) );
-				double tmp_devNetj = activation_function_dev(o[i]->at(j), NeuronType);
+				double tmp_devNetj = activation_function_dev(net[i]->at(j), o[i]->at(j), NeuronType);
 				double tmp_wkj = weight_old[i+1]->at(k)->at(j);
 				delta_tmp = delta_tmp + tmp_devNetj  * tmp_wkj * delta[i+1]->at(k);
 			}
