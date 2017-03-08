@@ -1015,12 +1015,12 @@ void simpleBP::plotROC(){
 
 void simpleBP::plotWeights(){
 
-	TCanvas * c_weights=new TCanvas("c_weights","c_weights",10,10,700,1400);
+	TCanvas * c_weights=new TCanvas("c_weights","c_weights",10,10,700,700*(nLayer+1));
 	c_weights->cd();
 
 	double x_ltx=0.1, y_ltx=0.9;
 	double dx=0.2;
-	double dy=0.02;
+	double dy=0.04/double(nLayer+1);
 
 	TLatex * ltx = new TLatex();
 	ltx->SetNDC(kTRUE);
@@ -1049,7 +1049,7 @@ void simpleBP::plotWeights(){
 		}
 	}
 
-	ltx->DrawLatex(x_ltx,y_ltx,Form("duration = %.0f sec", duration));
+	ltx->DrawLatex(x_ltx,y_ltx,Form("duration = %.2f sec", duration));
 
 	c_weights->SaveAs("myWeights.png");
 	c_weights->SaveAs("myWeights.pdf");

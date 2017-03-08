@@ -42,14 +42,14 @@ public :
 //   Int_t           mc_3l_category;
 //   Int_t           mc_ttbar_decay;
 //   Int_t           mc_boson_decay;
-//   Int_t           mc_ttZhypAllowed;
+   Int_t           mc_ttZhypAllowed;
 //   Int_t           mc_nJets25;
 //   Int_t           mc_nBtagJets25;
 //   Int_t           mc_nMediumBtagJets25;
 //   Int_t           mc_nNonBtagJets25;
 //   Int_t           catJets;
 //   Char_t          is_2lss_TTH_SR;
-//   Char_t          is_3l_TTH_SR;
+   Char_t          is_3l_TTH_SR;
 //   Char_t          is_emu_TT_CR;
 //   Char_t          is_3l_WZrel_CR;
 //   Char_t          is_3l_TTZ_CR;
@@ -250,14 +250,14 @@ public :
 //   TBranch        *b_mc_3l_category;   //!
 //   TBranch        *b_mc_ttbar_decay;   //!
 //   TBranch        *b_mc_boson_decay;   //!
-//   TBranch        *b_mc_ttZhypAllowed;   //!
+   TBranch        *b_mc_ttZhypAllowed;   //!
 //   TBranch        *b_mc_nJets25;   //!
 //   TBranch        *b_mc_nBtagJets25;   //!
 //   TBranch        *b_mc_nMediumBtagJets25;   //!
 //   TBranch        *b_mc_nNonBtagJets25;   //!
 //   TBranch        *b_catJets;   //!
 //   TBranch        *b_is_2lss_TTH_SR;   //!
-//   TBranch        *b_is_3l_TTH_SR;   //!
+   TBranch        *b_is_3l_TTH_SR;   //!
 //   TBranch        *b_is_emu_TT_CR;   //!
 //   TBranch        *b_is_3l_WZrel_CR;   //!
 //   TBranch        *b_is_3l_TTZ_CR;   //!
@@ -561,14 +561,14 @@ void base::Init(TTree *tree)
 //   fChain->SetBranchAddress("mc_3l_category", &mc_3l_category, &b_mc_3l_category);
 //   fChain->SetBranchAddress("mc_ttbar_decay", &mc_ttbar_decay, &b_mc_ttbar_decay);
 //   fChain->SetBranchAddress("mc_boson_decay", &mc_boson_decay, &b_mc_boson_decay);
-//   fChain->SetBranchAddress("mc_ttZhypAllowed", &mc_ttZhypAllowed, &b_mc_ttZhypAllowed);
+   fChain->SetBranchAddress("mc_ttZhypAllowed", &mc_ttZhypAllowed, &b_mc_ttZhypAllowed);
 //   fChain->SetBranchAddress("mc_nJets25", &mc_nJets25, &b_mc_nJets25);
 //   fChain->SetBranchAddress("mc_nBtagJets25", &mc_nBtagJets25, &b_mc_nBtagJets25);
 //   fChain->SetBranchAddress("mc_nMediumBtagJets25", &mc_nMediumBtagJets25, &b_mc_nMediumBtagJets25);
 //   fChain->SetBranchAddress("mc_nNonBtagJets25", &mc_nNonBtagJets25, &b_mc_nNonBtagJets25);
 //   fChain->SetBranchAddress("catJets", &catJets, &b_catJets);
 //   fChain->SetBranchAddress("is_2lss_TTH_SR", &is_2lss_TTH_SR, &b_is_2lss_TTH_SR);
-//   fChain->SetBranchAddress("is_3l_TTH_SR", &is_3l_TTH_SR, &b_is_3l_TTH_SR);
+   fChain->SetBranchAddress("is_3l_TTH_SR", &is_3l_TTH_SR, &b_is_3l_TTH_SR);
 //   fChain->SetBranchAddress("is_emu_TT_CR", &is_emu_TT_CR, &b_is_emu_TT_CR);
 //   fChain->SetBranchAddress("is_3l_WZrel_CR", &is_3l_WZrel_CR, &b_is_3l_WZrel_CR);
 //   fChain->SetBranchAddress("is_3l_TTZ_CR", &is_3l_TTZ_CR, &b_is_3l_TTZ_CR);
@@ -787,6 +787,8 @@ Double_t base::GetVal(TString varName){
 	if(varName=="mindr_lep2_jet")return mindr_lep2_jet;
 	if(varName=="LepGood_conePt0")return LepGood_conePt0;
 	if(varName=="LepGood_conePt1")return LepGood_conePt1;
+	if(varName=="mc_ttZhypAllowed")return mc_ttZhypAllowed;
+	if(varName=="is_3l_TTH_SR")return is_3l_TTH_SR;
 	if(varName=="weight")return weight;
 	return 0;
 }

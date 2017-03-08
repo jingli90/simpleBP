@@ -1,4 +1,4 @@
-back-propocation
+A simple model of back-propagation
 
 Modify sFilename, bFilename, treeName, outFilename in MyRun.C
 

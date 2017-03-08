@@ -13,14 +13,20 @@ void MyRun(){
 	gROOT->ProcessLine(Form("s.AddVariable(\"LepGood_conePt0\",\"D\")"));
 	gROOT->ProcessLine(Form("s.AddVariable(\"LepGood_conePt1\",\"D\")"));
 	gROOT->ProcessLine(Form("s.AddSpectator(\"is_3l_TTH_SR\",\"D\")"));
-	gROOT->ProcessLine(Form("s.SetNLayer(1)"));
-	gROOT->ProcessLine(Form("s.SetNNodes(1,8)")); //
+	gROOT->ProcessLine(Form("s.AddSpectator(\"mc_ttZhypAllowed\",\"D\")")); //
+	//gROOT->ProcessLine(Form("s.SetNLayer(1)")); //
+	//gROOT->ProcessLine(Form("s.SetNNodes(1,8)")); //
+	gROOT->ProcessLine(Form("s.SetNLayer(2)")); //
+	gROOT->ProcessLine(Form("s.SetNNodes(1,7)")); //
+	gROOT->ProcessLine(Form("s.SetNNodes(2,8)")); //
 	gROOT->ProcessLine(Form("s.SetEta(0.02)"));
 	gROOT->ProcessLine(Form("s.SetDecayRate(0.01)"));
 	gROOT->ProcessLine(Form("s.SetNEpochs(350)")); //
 	gROOT->ProcessLine(Form("s.SetTestRate(5)")); //
-	gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1\", \"Signal\")"));
-	gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1\", \"Background\")"));
+	//gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1\", \"Signal\")")); //
+	//gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1\", \"Background\")")); //
+	gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1 && mc_ttZhypAllowed==1\", \"Signal\")")); //
+	gROOT->ProcessLine(Form("s.SetCut(\"is_3l_TTH_SR==1 && mc_ttZhypAllowed==1\", \"Background\")")); //
 	gROOT->ProcessLine(Form("s.SetWeightExpression(\"weight\")"));
 	gROOT->ProcessLine(Form("s.IsPrintEvolution(false)")); //
 	gROOT->ProcessLine(Form("s.SetNeuronType(\"tanh\")"));
