@@ -1,4 +1,5 @@
 A simple model of back-propagation
+Interface to MEM
 
 Modify sFilename, bFilename, treeName, outFilename in MyRun.C
 
