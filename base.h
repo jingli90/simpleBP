@@ -452,10 +452,6 @@ public :
 	virtual Double_t GetVal(TString varName);
 };
 
-#endif
-
-//#ifdef base_cxx
-#ifdef simpleBP_cxx
 base::base(TTree *tree) : fChain(0) 
 {
 // if parameter tree is not specified (or zero), connect the file
@@ -792,4 +788,4 @@ Double_t base::GetVal(TString varName){
 	if(varName=="weight")return weight;
 	return 0;
 }
-#endif // #ifdef base_cxx
+#endif // #ifndef base_h

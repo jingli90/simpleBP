@@ -1,5 +1,8 @@
 // From Nicolas
 
+#ifndef base_plot_H
+#define base_plot_H
+
 #include <iostream>
 using namespace std;
 #include <string>
@@ -9,8 +12,6 @@ using namespace std;
 #include <TGraph.h>
 #include <TTree.h>
 #include <TDirectory.h>
-
-#ifdef simpleBP_cxx
 
 TH1D* GetHistoWeight(TTree* t, string variable, int nbins, double xmin, double xmax, string cut, string weight, string name){
 	string sxmin, sxmax, snbins;

@@ -1,5 +1,5 @@
-#ifdef simpleBP_cxx
-
+#ifndef base_function_h
+#define base_function_h
 #include "TMath.h"
 
 double myTANH(double x){

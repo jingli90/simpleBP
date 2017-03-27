@@ -146,6 +146,8 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	bFilename = BackgroundFile;
 	treeName = treename;
 	outFilename = outfilename;
+	TFile * fout = new TFile(outFilename.Data(),"RECREATE");
+
 	c_s = new TChain(treeName.Data(),"c_s");
 	c_b = new TChain(treeName.Data(),"c_b");
 	c_s->Add(sFilename.Data());
@@ -154,8 +156,6 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	b_b = new base();
 	b_s_test = new base();
 	b_b_test = new base();
-
-	TFile * fout = new TFile(outFilename.Data(),"RECREATE");
 
 	var_input = new vector<TString>;
 	type_input = new vector<TString>;
@@ -189,6 +189,21 @@ simpleBP::simpleBP(TString SignalFile, TString BackgroundFile, TString treename,
 	minDev=0.1;
 	TestRate=10;
 	NeuronType="tanh";
+	isPrintEvolution=false;
+	nEpochs=-1;
+
+	fout->cd();
+	t_s_cut = new TTree();
+	t_b_cut = new TTree();
+	train_s = new TTree();
+	train_b = new TTree();
+	test_s = new TTree();
+	test_b = new TTree();
+	tout_train_s = new TTree();
+	tout_train_b = new TTree();
+	tout_test_s = new TTree();
+	tout_test_b = new TTree();
+
 }
 
 void simpleBP::SetNLayer(int nlayer){
@@ -203,6 +218,9 @@ void simpleBP::SetNLayer(int nlayer){
 }
 
 void simpleBP::SetNNodes(int i, int nnodes){
+	if(i>=nLayer){
+		cout<<"Inner layer "<<i<<" does not exit"<<endl;
+	}
 	nNodes[i]=nnodes;
 	cout<<"Number of nodes in inner layer "<<i<<" is "<<nNodes[i]<<endl;
 }
@@ -249,7 +267,7 @@ void simpleBP::SetCut(const TString& cut, const TString& className){
 }
 
 void simpleBP::InitParameters(){
-	for(int ivar=0;ivar<var_input->size();ivar++){
+	for(unsigned int ivar=0;ivar<var_input->size();ivar++){
 		cout<<"Init input variable "<<ivar<<endl;
 		TString var_name=var_input->at(ivar);
 		double var0Max=TMath::Max(t_s_cut->GetMaximum(var_name.Data()),t_b_cut->GetMaximum(var_name.Data()));
@@ -305,12 +323,12 @@ void simpleBP::InitTrees(){
 	cout<<"Init test and training trees ..."<<endl;
 	c_s->SetBranchStatus("*",0);
 	c_b->SetBranchStatus("*",0);
-	for(int ivar=0;ivar<var_input->size();ivar++){
+	for(unsigned int ivar=0;ivar<var_input->size();ivar++){
 		TString var_name=var_input->at(ivar);
 		c_s->SetBranchStatus(var_name.Data(),1);
 		c_b->SetBranchStatus(var_name.Data(),1);
 	}
-	for(int ivar=0;ivar<spectator_var_input->size();ivar++){   
+	for(unsigned int ivar=0;ivar<spectator_var_input->size();ivar++){   
 		TString var_name=spectator_var_input->at(ivar);
 		c_s->SetBranchStatus(var_name.Data(),1);
 		c_b->SetBranchStatus(var_name.Data(),1);
@@ -335,14 +353,12 @@ void simpleBP::InitTrees(){
 		//cout<<"total: "<<nentries<<endl;
 	}
 
-	train_s = new TTree();
 	train_s = t_s_cut->CloneTree(0);
 	for (Long64_t jentry=0; jentry<nentries_s;jentry=jentry+2.){
 		t_s_cut->GetEntry(jentry);
 		train_s->Fill();
 		nentries_s_train++;
 	}
-	train_b = new TTree();	
 	train_b = t_b_cut->CloneTree(0);
 	for (Long64_t jentry=0; jentry<nentries_b;jentry=jentry+2.){
 		t_b_cut->GetEntry(jentry);
@@ -350,7 +366,6 @@ void simpleBP::InitTrees(){
 		nentries_b_train++;
 	}
 
-	test_s = new TTree();
 	test_s = t_s_cut->CloneTree(0);
 	for (Long64_t jentry=1; jentry<nentries_s;jentry=jentry+2.){
 		t_s_cut->GetEntry(jentry);
@@ -358,7 +373,6 @@ void simpleBP::InitTrees(){
 		nentries_s_test++;
 	}
 
-	test_b = new TTree();
 	test_b = c_b->CloneTree(0);
 	for (Long64_t jentry=1; jentry<nentries_b;jentry=jentry+2.){
 		t_b_cut->GetEntry(jentry);
@@ -596,7 +610,7 @@ void simpleBP::calculate(base * b){
 	net[0]->push_back(1);
 	o[0]->push_back(1);
 
-	for(int ivar=0;ivar<var_input->size();ivar++){
+	for(unsigned int ivar=0;ivar<var_input->size();ivar++){
 		double var_tmp=b->GetVal(var_input->at(ivar));
 		var->push_back(2 * (var_tmp - var_min_int->at(ivar)) / (var_max_int->at(ivar) - var_min_int->at(ivar)) - 1);
 		o[0]->push_back(var->at(ivar));
@@ -698,10 +712,10 @@ Double_t simpleBP::CalculateEstimator( TString treeType, Int_t iEpoch ){
 	if (treeType!="Training" && treeType!="Testing") {
 		cout<<"<CalculateEstimator> fatal error: wrong tree type: "<<treeType << endl;
 	}
-	base * b_s_tmp;
-	base * b_b_tmp;
-	Int_t nEvents;
-	Int_t nentries_s_tmp, nentries_b_tmp;
+	base * b_s_tmp = new base();
+	base * b_b_tmp = new base();
+	Int_t nEvents=-1;
+	Int_t nentries_s_tmp=-1, nentries_b_tmp=-1;
 	if(treeType=="Training"){
 		b_s_tmp=b_s;
 		b_b_tmp=b_b;
@@ -765,7 +779,6 @@ void simpleBP::Eval(){
 		tout_train_s->Fill();
 	}
 
-	tout_train_b = new TTree();	
 	tout_train_b = train_b->CloneTree(0);
 	tout_train_b->Branch("discriminant",&discriminant,"discriminant/D");	
 	for(int i=0;i<nLayer+1;i++){
@@ -779,7 +792,6 @@ void simpleBP::Eval(){
 		tout_train_b->Fill();
 	}
 
-	tout_test_s = new TTree();
 	tout_test_s = test_s->CloneTree(0);
 	tout_test_s->Branch("discriminant",&discriminant,"discriminant/D"); 
 	for(int i=0;i<nLayer+1;i++){
@@ -793,7 +805,6 @@ void simpleBP::Eval(){
 		tout_test_s->Fill();
 	}
 
-	tout_test_b = new TTree();
 	tout_test_b = test_b->CloneTree(0);
 	tout_test_b->Branch("discriminant",&discriminant,"discriminant/D"); 
 	for(int i=0;i<nLayer+1;i++){
