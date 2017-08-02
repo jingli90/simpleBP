@@ -1,7 +1,13 @@
-A simple model of back-propagation
+A simple model of regression 
 
-Modify sFilename, bFilename, treeName, outFilename in MyRun.C
+Modify options in doRegress.cpp 
 
 To run:
 
-root -l -b MyRun.C
+mkdir test
+
+make
+
+cd test
+
+./test

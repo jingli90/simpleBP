@@ -1,5 +1,8 @@
 // From Nicolas
 
+#ifndef base_plot_h
+#define base_plot_h
+
 #include <iostream>
 using namespace std;
 #include <string>
@@ -9,8 +12,6 @@ using namespace std;
 #include <TGraph.h>
 #include <TTree.h>
 #include <TDirectory.h>
-
-#ifdef simpleBP_cxx
 
 TH1D* GetHistoWeight(TTree* t, string variable, int nbins, double xmin, double xmax, string cut, string weight, string name){
 	string sxmin, sxmax, snbins;
@@ -85,7 +86,7 @@ TGraph * GetEffSvsEffB(TTree* Signal, TTree* Background, string presel_sig, stri
 	Eff_bg[0]=1.;
 
 	for (int i=1; i<=nbins; i++){
-		double valcut = valmax*((double)i)/((double)nbins) + valmin*(1-((double)i)/((double)nbins));
+		//double valcut = valmax*((double)i)/((double)nbins) + valmin*(1-((double)i)/((double)nbins));
 
 		//ss[i] << valcut;
 		//ss[i] >> svalcut;
