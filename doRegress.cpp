@@ -13,9 +13,13 @@
 //#include "base_function.h"
 
 int main(int argc, char *argv[]){
-	TString Filename_ttZ = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttZ.root";
-	TString Filename_ttW = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttW.root";
-	TString Filename_ttH = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttH.root";
+	//TString Filename_ttZ = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttZ.root";
+	//TString Filename_ttW = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttW.root";
+	//TString Filename_ttH = "/afs/cern.ch/work/j/jing/private/FCPPL/learning_NN/regress/smallTree/small_ttH.root";
+
+	TString Filename_ttZ = "/afs/cern.ch/work/j/jing/public/IPHCNtuple/smallTree/small_ttZ.root";
+	TString Filename_ttW = "/afs/cern.ch/work/j/jing/public/IPHCNtuple/smallTree/small_ttW.root";
+	TString Filename_ttH = "/afs/cern.ch/work/j/jing/public/IPHCNtuple/smallTree/small_ttH.root";
 
 	TString treeName = "Tree";
 	TString outFilename = "output.root";
